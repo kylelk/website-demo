@@ -1,0 +1,10 @@
+obj/*
+!obj/.keep
+obj/tests/*
+!obj/tests/.keep
+*.npp
+*.o
+*.ali
+*.db
+*.nc_refs
+*.bundle
