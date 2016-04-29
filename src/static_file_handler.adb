@@ -1,6 +1,6 @@
 with AWS.MIME;
-with AWS.Services.Page_Server;
-with GNAT.Directory_Operations;
+with AWS.Services.Directory;
+with AWS.Utils;
 with Not_Found;
 
 package body Static_File_Handler is
@@ -14,14 +14,16 @@ package body Static_File_Handler is
    function Get_Index_File(Request : AWS.Status.Data)
                            return AWS.Response.Data is
       Request_Path : constant String := AWS.Status.URI(Request);
-      File_Path : constant String :=
-        GNAT.Directory_Operations.Format_Pathname("public/" & Request_Path & "/index.html");
+      File_Path : constant String := "public/" & Request_Path & "/index.html";
    begin
-      if DIRS.Exists(File_Path) and
-        DIRS.Kind(File_Path) in DIRS.Ordinary_File | DIRS.Special_File then
+      if DIRS.Exists(File_Path) and AWS.Utils.Is_Regular_File(File_Path) then
          return AWS.Response.File("text/html", File_Path);
       else
-         return AWS.Services.Page_Server.Callback(Request);
+         return AWS.Response.Build
+           (Content_Type => "text/html",
+            Message_Body =>
+              AWS.Services.Directory.Browse
+              ("public/" & Request_Path, "aws_directory.thtml", Request));
       end if;
    end Get_Index_File;
 
@@ -30,8 +32,7 @@ package body Static_File_Handler is
       return AWS.Response.Data
    is
       Request_Path : constant String := AWS.Status.URI(Request);
-      File_Path : constant String :=
-        GNAT.Directory_Operations.Format_Pathname("public/" & Request_Path);
+      File_Path : constant String := "public/" & Request_Path;
       Content_Type : constant String := AWS.MIME.Content_Type(Request_Path);
    begin
       if DIRS.Exists(File_Path) then
